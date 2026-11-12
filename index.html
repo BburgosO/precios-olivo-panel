@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Precios Olivo</title>
+<style>
+  :root {
+    --fondo: #f5f6f4; --tarjeta: #ffffff; --texto: #1d2420; --suave: #5f6b64; --borde: #dfe3df;
+    --marca: #3f6b43; --marca-suave: #e6efe4; --rojo: #b3261e; --rojo-suave: #fbe9e7;
+    --ambar: #8a5a00; --ambar-suave: #fdf1d6; --azul: #1f5a8a; --azul-suave: #e3eef7; --gris-suave: #eef0ee;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fondo); color: var(--texto); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  button, input, select { font: inherit; }
+  .oculto { display: none !important; }
+  header { background: var(--tarjeta); border-bottom: 1px solid var(--borde); padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 5; }
+  .marca { font-weight: 700; font-size: 18px; color: var(--marca); }
+  .estado-act { color: var(--suave); font-size: 13px; }
+  .acciones { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .boton { border: 1px solid var(--marca); background: var(--marca); color: #fff; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-weight: 600; }
+  .boton.sec { background: transparent; color: var(--marca); }
+  .boton.chico { padding: 4px 10px; font-size: 13px; }
+  .boton.peligro { border-color: var(--rojo); color: var(--rojo); background: transparent; }
+  .boton:disabled { opacity: .55; cursor: default; }
+  nav { display: flex; gap: 4px; padding: 8px 16px 0; overflow-x: auto; }
+  nav button { border: 0; background: transparent; padding: 10px 14px; border-bottom: 3px solid transparent; cursor: pointer; color: var(--suave); white-space: nowrap; font-weight: 600; }
+  nav button.activo { color: var(--marca); border-bottom-color: var(--marca); }
+  main { padding: 16px; max-width: 1400px; margin: 0 auto; }
+  .tarjeta { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .kpi { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 12px; padding: 14px; }
+  .kpi .v { font-size: 26px; font-weight: 700; }
+  .kpi .e { color: var(--suave); font-size: 13px; }
+  .filtros { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+  .filtros input[type=search] { flex: 1 1 220px; padding: 8px 10px; border: 1px solid var(--borde); border-radius: 8px; background: #fff; }
+  .tabla { width: 100%; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 860px; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid var(--borde); text-align: left; vertical-align: top; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .03em; color: var(--suave); background: var(--gris-suave); position: sticky; top: 0; }
+  td.n, th.n { text-align: right; white-space: nowrap; }
+  tr.fila { cursor: pointer; }
+  tr.fila:hover { background: #fafbfa; }
+  tr.detalle > td { background: #fbfcfb; padding: 0 10px 12px 34px; }
+  .sub { color: var(--suave); font-size: 12px; }
+  .chip { display: inline-block; border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .c-principal { background: var(--rojo-suave); color: var(--rojo); }
+  .c-por_confirmar { background: var(--ambar-suave); color: var(--ambar); }
+  .c-referencia { background: var(--azul-suave); color: var(--azul); }
+  .c-ok { background: var(--marca-suave); color: var(--marca); }
+  .c-gris { background: var(--gris-suave); color: var(--suave); }
+  .pos { color: var(--rojo); font-weight: 600; }
+  .neg { color: var(--marca); font-weight: 600; }
+  a { color: var(--azul); }
+  .login { max-width: 380px; margin: 10vh auto; }
+  .login label { display: block; font-weight: 600; margin: 12px 0 4px; }
+  .login input { width: 100%; padding: 10px; border: 1px solid var(--borde); border-radius: 8px; }
+  .aviso { padding: 10px 12px; border-radius: 8px; margin-top: 12px; font-size: 14px; }
+  .aviso.err { background: var(--rojo-suave); color: var(--rojo); }
+  .aviso.ok { background: var(--marca-suave); color: var(--marca); }
+  .aviso.info { background: var(--azul-suave); color: var(--azul); }
+  .nota { color: var(--suave); font-size: 13px; }
+  .alvi input { width: 110px; padding: 6px 8px; border: 1px solid var(--borde); border-radius: 6px; }
+  h2 { font-size: 18px; margin: 0 0 4px; }
+  @media (max-width: 640px) { main { padding: 12px; } .kpi .v { font-size: 22px; } }
+</style>
+</head>
+<body>
+
+<section id="vista-login" class="login tarjeta oculto">
+  <div class="marca">Precios Olivo</div>
+  <p class="nota">Ingresa con el correo y la contraseña que te entregaron.</p>
+  <form id="form-login">
+    <label for="correo">Correo</label>
+    <input id="correo" type="email" autocomplete="username" required>
+    <label for="clave">Contraseña</label>
+    <input id="clave" type="password" autocomplete="current-password" required>
+    <div style="margin-top:16px"><button class="boton" type="submit">Ingresar</button></div>
+  </form>
+  <div id="login-msg"></div>
+</section>
+
+<div id="vista-app" class="oculto">
+  <header>
+    <div>
+      <div class="marca">Precios Olivo</div>
+      <div class="estado-act" id="estado-act">Cargando…</div>
+    </div>
+    <div class="acciones">
+      <button class="boton" id="btn-actualizar">Actualizar precios</button>
+      <button class="boton sec" id="btn-salir">Salir</button>
+    </div>
+  </header>
+  <div id="msg-global"></div>
+  <nav>
+    <button data-tab="resumen" class="activo">Resumen</button>
+    <button data-tab="alertas">Alertas</button>
+    <button data-tab="coincidencias">Coincidencias</button>
+    <button data-tab="alvi">Carga Alvi</button>
+    <button data-tab="historial">Historial</button>
+  </nav>
+  <main>
+    <section id="tab-resumen"></section>
+    <section id="tab-alertas" class="oculto"></section>
+    <section id="tab-coincidencias" class="oculto"></section>
+    <section id="tab-alvi" class="oculto"></section>
+    <section id="tab-historial" class="oculto"></section>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+const SUPABASE_URL = "https://xmpwddxlyjernvsmdpjm.supabase.co";
+const SUPABASE_KEY = "sb_publishable_85jSD4s3xTFJ4TrVmhp75w_eSfSk0dv";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const D = { metricas: [], comp: [], act: [], abiertos: new Set(), filtro: "", soloAlertas: false, filtroCoin: "preliminar" };
+const $ = (id) => document.getElementById(id);
+
+// ---------- utilidades ----------
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pesos = (v) => v == null ? "—" : new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(v);
+const pct = (v, signo = true) => v == null ? "—" : (signo && v > 0 ? "+" : "") + (v * 100).toFixed(1).replace(".", ",") + "%";
+const fecha = (s) => s ? new Date(s).toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" }) : "—";
+const enlace = (u, txt) => /^https:\/\//.test(u || "") ? `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(txt)}</a>` : esc(txt);
+const UNIDAD = { kg: "kg", litro: "L", unidad: "un", metro: "m" };
+const NIVEL = {
+  principal: ["Más caro", "c-principal"],
+  por_confirmar: ["Más caro · por confirmar", "c-por_confirmar"],
+  referencia: ["Referencia más barata", "c-referencia"],
+  sin_stock: ["Sin stock", "c-gris"],
+  desactualizado: ["Precio antiguo", "c-gris"],
+};
+const chipNivel = (n) => n && NIVEL[n] ? `<span class="chip ${NIVEL[n][1]}">${NIVEL[n][0]}</span>` : "";
+const claseDif = (v) => v == null ? "" : v > 0.03 ? "pos" : v < -0.03 ? "neg" : "";
+
+function aviso(contenedor, tipo, texto) {
+  $(contenedor).innerHTML = texto ? `<div class="aviso ${tipo}" style="margin:12px 16px 0">${esc(texto)}</div>` : "";
+}
+
+// ---------- sesión ----------
+async function iniciar() {
+  const { data } = await sb.auth.getSession();
+  if (data.session) { mostrarApp(); } else { $("vista-login").classList.remove("oculto"); }
+}
+
+$("form-login").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("login-msg").innerHTML = "";
+  const { error } = await sb.auth.signInWithPassword({ email: $("correo").value.trim(), password: $("clave").value });
+  if (error) { $("login-msg").innerHTML = `<div class="aviso err">No se pudo ingresar: revisa el correo y la contraseña.</div>`; return; }
+  $("vista-login").classList.add("oculto");
+  mostrarApp();
+});
+
+$("btn-salir").addEventListener("click", async () => { await sb.auth.signOut(); location.reload(); });
+
+async function mostrarApp() {
+  $("vista-app").classList.remove("oculto");
+  await cargar();
+}
+
+// ---------- datos ----------
+async function cargar() {
+  const [m, c, a] = await Promise.all([
+    sb.from("metricas_mensuales").select("*, productos(nombre, categoria, cantidad_base, unidad_base, formato_pendiente)").order("ranking"),
+    sb.from("comparacion").select("*"),
+    sb.from("actualizaciones").select("*").order("id", { ascending: false }).limit(20),
+  ]);
+  const error = m.error || c.error || a.error;
+  if (error) { aviso("msg-global", "err", "No se pudieron cargar los datos: " + error.message); return; }
+  const periodo = m.data.reduce((x, r) => r.periodo > x ? r.periodo : x, "");
+  D.metricas = m.data.filter((r) => r.periodo === periodo);
+  D.comp = c.data; D.act = a.data;
+  if (!D.metricas.length) {
+    aviso("msg-global", "err", "Tu usuario inició sesión, pero no tiene permiso para ver los datos. Pide que agreguen tu correo a la lista de usuarios autorizados.");
+  }
+  renderTodo();
+}
+
+function renderTodo() {
+  renderEstado(); renderResumen(); renderAlertas(); renderCoincidencias(); renderAlvi(); renderHistorial();
+}
+
+function renderEstado() {
+  const u = D.act[0];
+  if (!u) { $("estado-act").textContent = "Aún no hay actualizaciones."; return; }
+  const det = u.detalle || {};
+  const txt = u.estado === "en_curso" ? `Actualización en curso desde ${fecha(u.iniciada_en)}`
+    : `Última actualización: ${fecha(u.finalizada_en || u.iniciada_en)} · ${det.con_precio ?? "?"} de ${det.total ?? "?"} precios`;
+  $("estado-act").textContent = txt;
+  $("btn-actualizar").disabled = u.estado === "en_curso";
+}
+
+const porSku = () => {
+  const g = {};
+  for (const r of D.comp) (g[r.sku] ||= []).push(r);
+  return g;
+};
+const usable = (r) => r.precio_normal != null && r.estado !== "rechazada" && r.disponible !== false && r.vigente;
+
+// ---------- Resumen ----------
+function renderResumen() {
+  const g = porSku();
+  const filas = D.metricas.map((m) => {
+    const cs = g[m.sku] || [];
+    const ok = cs.filter(usable);
+    const mejorId = ok.filter((r) => r.tipo === "identico").sort((a, b) => a.competidor_referencia_por_unidad_base - b.competidor_referencia_por_unidad_base)[0];
+    const mejorEq = ok.filter((r) => r.tipo === "equivalente").sort((a, b) => a.competidor_referencia_por_unidad_base - b.competidor_referencia_por_unidad_base)[0];
+    const niveles = cs.map((r) => r.alerta).filter(Boolean);
+    const nivel = ["principal", "por_confirmar", "referencia"].find((n) => niveles.includes(n));
+    return { m, cs, mejorId, mejorEq, nivel };
+  });
+  const tot = (n) => filas.filter((f) => f.nivel === n).length;
+  const pendientes = D.comp.filter((r) => r.estado === "preliminar").length;
+  const q = D.filtro.toLowerCase();
+  const vis = filas.filter((f) => (!q || (f.m.sku + " " + (f.m.productos?.nombre || "")).toLowerCase().includes(q)) && (!D.soloAlertas || f.nivel));
+
+  $("tab-resumen").innerHTML = `
+    <div class="kpis">
+      <div class="kpi"><div class="v">${D.metricas.length}</div><div class="e">productos en seguimiento</div></div>
+      <div class="kpi"><div class="v" style="color:var(--rojo)">${tot("principal")}</div><div class="e">alertas principales (idénticos aprobados)</div></div>
+      <div class="kpi"><div class="v" style="color:var(--ambar)">${tot("por_confirmar")}</div><div class="e">alertas por confirmar</div></div>
+      <div class="kpi"><div class="v" style="color:var(--azul)">${tot("referencia")}</div><div class="e">con referencia más barata</div></div>
+      <div class="kpi"><div class="v">${pendientes}</div><div class="e">coincidencias por aprobar</div></div>
+    </div>
+    <div class="filtros">
+      <input type="search" id="buscar" placeholder="Buscar por SKU o nombre" value="${esc(D.filtro)}">
+      <label><input type="checkbox" id="solo-alertas" ${D.soloAlertas ? "checked" : ""}> Solo productos con alerta</label>
+    </div>
+    <div class="tarjeta tabla" style="padding:0">
+      <table>
+        <thead><tr>
+          <th>#</th><th>Producto</th><th class="n">Precio bruto</th><th class="n">Costo neto</th><th class="n">Margen $</th><th class="n">Margen %</th>
+          <th class="n">Olivo por unidad</th><th>Mejor idéntico</th><th class="n">Dif.</th><th>Mejor equivalente</th><th class="n">Dif.</th><th>Estado</th>
+        </tr></thead>
+        <tbody>${vis.map(filaResumen).join("") || `<tr><td colspan="12" class="nota">Sin resultados.</td></tr>`}</tbody>
+      </table>
+    </div>
+    <p class="nota">Precios de la competencia llevados a bruto con IVA y a la misma unidad que Olivo. Centro Abasto publica precios netos y se les suma 19%; en Central y aCuenta el IVA incluido está por confirmar. La comparación usa la oferta cuando existe, sin contar descuentos por volumen ni precio socio. Haz clic en un producto para ver cada competidor.</p>`;
+
+  $("buscar").addEventListener("input", (e) => { D.filtro = e.target.value; renderResumen(); const b = $("buscar"); b.focus(); b.setSelectionRange(b.value.length, b.value.length); });
+  $("solo-alertas").addEventListener("change", (e) => { D.soloAlertas = e.target.checked; renderResumen(); });
+  document.querySelectorAll("#tab-resumen tr.fila").forEach((tr) => tr.addEventListener("click", () => {
+    const s = tr.dataset.sku; D.abiertos.has(s) ? D.abiertos.delete(s) : D.abiertos.add(s); renderResumen();
+  }));
+  enlazarAprobaciones("#tab-resumen");
+}
+
+function celdaMejor(r) {
+  if (!r) return `<td class="sub">—</td><td class="n">—</td>`;
+  const u = UNIDAD[r.unidad_base] || "";
+  return `<td>${pesos(r.competidor_referencia_por_unidad_base)}/${u}<div class="sub">${esc(r.competidor_nombre)}${r.usa_oferta ? " · oferta" : ""}</div></td>
+          <td class="n ${claseDif(r.diferencia_referencia_pct)}">${pct(r.diferencia_referencia_pct)}</td>`;
+}
+
+function filaResumen(f) {
+  const m = f.m, p = m.productos || {};
+  const u = UNIDAD[p.unidad_base] || "";
+  const olivoU = p.cantidad_base ? m.precio_bruto / p.cantidad_base : null;
+  const abierto = D.abiertos.has(m.sku);
+  let html = `<tr class="fila" data-sku="${esc(m.sku)}">
+    <td>${m.ranking}</td>
+    <td><strong>${esc(p.nombre)}</strong><div class="sub">${esc(m.sku)} · ${esc(p.categoria || "")}${p.formato_pendiente ? " · formato por confirmar" : ""}</div></td>
+    <td class="n">${pesos(m.precio_bruto)}</td><td class="n">${pesos(m.costo_neto)}</td>
+    <td class="n">${pesos(m.margen_monto)}</td><td class="n">${pct(m.margen_pct, false)}</td>
+    <td class="n">${olivoU ? pesos(olivoU) + "/" + u : "—"}</td>
+    ${celdaMejor(f.mejorId)}${celdaMejor(f.mejorEq)}
+    <td>${chipNivel(f.nivel) || (f.cs.length ? `<span class="chip c-ok">Sin alerta</span>` : `<span class="chip c-gris">Sin comparación</span>`)}</td>
+  </tr>`;
+  if (abierto) html += `<tr class="detalle"><td colspan="12">${tablaCompetidores(f.cs)}</td></tr>`;
+  return html;
+}
+
+function tablaCompetidores(cs) {
+  if (!cs.length) return `<p class="nota">No hay productos de la competencia para comparar.</p>`;
+  const orden = { identico: 0, equivalente: 1 };
+  const filas = [...cs].sort((a, b) => orden[a.tipo] - orden[b.tipo] || a.competidor_nombre.localeCompare(b.competidor_nombre));
+  return `<table style="min-width:900px"><thead><tr><th>Competidor</th><th>Tipo</th><th>Producto</th><th class="n">Normal</th><th class="n">Oferta</th><th class="n">Por unidad</th><th class="n">Dif.</th><th>Fecha</th><th>Estado</th><th></th></tr></thead><tbody>
+    ${filas.map((r) => {
+      const u = UNIDAD[r.unidad_base] || "";
+      return `<tr>
+        <td>${esc(r.competidor_nombre)}${r.factor_iva > 1 ? `<div class="sub">neto + IVA</div>` : ""}</td>
+        <td>${r.tipo === "identico" ? "Idéntico" : "Equivalente"}</td>
+        <td>${enlace(r.url, r.producto_competidor)}</td>
+        <td class="n">${pesos(r.precio_normal)}</td>
+        <td class="n">${r.precio_oferta != null ? pesos(r.precio_oferta) + `<div class="sub">${esc(r.condicion_oferta || "")}</div>` : "—"}</td>
+        <td class="n">${r.competidor_referencia_por_unidad_base != null ? pesos(r.competidor_referencia_por_unidad_base) + "/" + u : "—"}</td>
+        <td class="n ${claseDif(r.diferencia_referencia_pct)}">${pct(r.diferencia_referencia_pct)}</td>
+        <td class="sub">${fecha(r.capturado_en)}${r.origen === "manual" ? "<br>manual" : ""}</td>
+        <td>${chipNivel(r.alerta) || ""} <span class="sub">${esc(r.estado)}</span></td>
+        <td>${botonesEstado(r)}</td></tr>`;
+    }).join("")}</tbody></table>`;
+}
+
+function botonesEstado(r) {
+  const b = (estado, txt, extra = "") => `<button class="boton chico ${extra}" data-coin="${r.coincidencia_id}" data-estado="${estado}">${txt}</button>`;
+  if (r.estado === "preliminar") return b("aprobada", "Aprobar") + " " + b("rechazada", "Rechazar", "peligro");
+  return b("preliminar", "Deshacer", "sec");
+}
+
+function enlazarAprobaciones(sel) {
+  document.querySelectorAll(`${sel} button[data-coin]`).forEach((btn) => btn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    btn.disabled = true;
+    const id = Number(btn.dataset.coin), estado = btn.dataset.estado;
+    const { error } = await sb.from("coincidencias").update({ estado }).eq("id", id);
+    if (error) { aviso("msg-global", "err", "No se pudo guardar: " + error.message); btn.disabled = false; return; }
+    const { data } = await sb.from("comparacion").select("*").eq("coincidencia_id", id);
+    D.comp = D.comp.filter((r) => r.coincidencia_id !== id).concat(data || []);
+    renderTodo();
+  }));
+}
+
+// ---------- Alertas ----------
+function renderAlertas() {
+  const nombre = Object.fromEntries(D.metricas.map((m) => [m.sku, m.productos?.nombre || m.sku]));
+  const bloque = (nivel, titulo, texto) => {
+    const fs = D.comp.filter((r) => r.alerta === nivel).sort((a, b) => b.diferencia_referencia_pct - a.diferencia_referencia_pct);
+    return `<div class="tarjeta"><h2>${titulo} (${fs.length})</h2><p class="nota">${texto}</p>
+      ${fs.length ? `<div class="tabla"><table><thead><tr><th>Producto Olivo</th><th>Competidor</th><th>Producto competidor</th><th class="n">Olivo</th><th class="n">Competidor</th><th class="n">Olivo más caro</th><th></th></tr></thead><tbody>
+      ${fs.map((r) => { const u = UNIDAD[r.unidad_base] || ""; return `<tr>
+        <td><strong>${esc(nombre[r.sku])}</strong><div class="sub">${esc(r.sku)}</div></td>
+        <td>${esc(r.competidor_nombre)}</td><td>${enlace(r.url, r.producto_competidor)}${r.usa_oferta ? `<div class="sub">oferta: ${esc(r.condicion_oferta || "")}</div>` : ""}</td>
+        <td class="n">${pesos(r.olivo_por_unidad_base)}/${u}</td><td class="n">${pesos(r.competidor_referencia_por_unidad_base)}/${u}</td>
+        <td class="n pos">${pct(r.diferencia_referencia_pct)}</td><td>${nivel === "por_confirmar" ? botonesEstado(r) : ""}</td></tr>`; }).join("")}
+      </tbody></table></div>` : `<p class="nota">Nada por ahora.</p>`}</div>`;
+  };
+  $("tab-alertas").innerHTML =
+    bloque("principal", "Alertas principales", "Producto idéntico y aprobado, más de 3% más barato en la competencia.") +
+    bloque("por_confirmar", "Por confirmar", "Producto idéntico aún no aprobado. Revisa que de verdad sea el mismo producto y apruébalo para convertirla en alerta principal.") +
+    bloque("referencia", "Referencias", "Producto equivalente (otra marca o formato) más de 3% más barato. Sirve como señal del mercado, no como comparación exacta.");
+  enlazarAprobaciones("#tab-alertas");
+}
+
+// ---------- Coincidencias ----------
+function renderCoincidencias() {
+  const nombre = Object.fromEntries(D.metricas.map((m) => [m.sku, m.productos?.nombre || m.sku]));
+  const fs = D.comp.filter((r) => D.filtroCoin === "todas" || r.estado === D.filtroCoin)
+    .sort((a, b) => a.sku.localeCompare(b.sku) || a.competidor_nombre.localeCompare(b.competidor_nombre));
+  const cuenta = (e) => D.comp.filter((r) => r.estado === e).length;
+  $("tab-coincidencias").innerHTML = `<div class="tarjeta"><h2>Coincidencias</h2>
+    <p class="nota">Cada fila une un producto de Olivo con uno de la competencia. Aprueba las correctas y rechaza las que no correspondan: las rechazadas dejan de compararse.</p>
+    <div class="filtros"><select id="filtro-coin">
+      <option value="preliminar">Por revisar (${cuenta("preliminar")})</option>
+      <option value="aprobada">Aprobadas (${cuenta("aprobada")})</option>
+      <option value="rechazada">Rechazadas (${cuenta("rechazada")})</option>
+      <option value="todas">Todas (${D.comp.length})</option></select></div>
+    <div class="tabla"><table><thead><tr><th>Producto Olivo</th><th>Competidor</th><th>Tipo</th><th>Producto competidor</th><th class="n">Dif.</th><th></th></tr></thead><tbody>
+    ${fs.map((r) => `<tr><td><strong>${esc(nombre[r.sku])}</strong><div class="sub">${esc(r.sku)}</div></td><td>${esc(r.competidor_nombre)}</td>
+      <td>${r.tipo === "identico" ? "Idéntico" : "Equivalente"}</td><td>${enlace(r.url, r.producto_competidor)}</td>
+      <td class="n ${claseDif(r.diferencia_referencia_pct)}">${pct(r.diferencia_referencia_pct)}</td><td>${botonesEstado(r)}</td></tr>`).join("") || `<tr><td colspan="6" class="nota">No hay coincidencias en este estado.</td></tr>`}
+    </tbody></table></div></div>`;
+  $("filtro-coin").value = D.filtroCoin;
+  $("filtro-coin").addEventListener("change", (e) => { D.filtroCoin = e.target.value; renderCoincidencias(); });
+  enlazarAprobaciones("#tab-coincidencias");
+}
+
+// ---------- Alvi ----------
+function renderAlvi() {
+  const nombre = Object.fromEntries(D.metricas.map((m) => [m.sku, m.productos?.nombre || m.sku]));
+  const fs = D.comp.filter((r) => r.competidor === "alvi" && r.tipo === "identico");
+  $("tab-alvi").innerHTML = `<div class="tarjeta alvi"><h2>Carga manual de Alvi</h2>
+    <p class="nota">Alvi no permite consultas automáticas. Abre cada producto en Alvi, copia el precio regular y, si existe, el precio socio más bajo con su cantidad mínima. Los precios con más de 7 días dejan de generar alertas.</p>
+    <div class="tabla"><table><thead><tr><th>Producto Olivo</th><th>Producto en Alvi</th><th class="n">Último precio</th><th>Precio regular</th><th>Precio socio</th><th>Desde (unidades)</th><th></th></tr></thead><tbody>
+    ${fs.map((r) => `<tr data-alvi="${r.coincidencia_id}">
+      <td><strong>${esc(nombre[r.sku])}</strong><div class="sub">${esc(r.sku)}</div></td>
+      <td>${enlace("https://www.alvi.cl/search?q=" + encodeURIComponent(r.producto_competidor), r.producto_competidor)}</td>
+      <td class="n">${r.precio_normal != null ? pesos(r.precio_normal) + `<div class="sub">${fecha(r.capturado_en)}${r.vigente ? "" : " · antiguo"}</div>` : "Sin datos"}</td>
+      <td><input type="number" min="1" step="1" inputmode="numeric" class="a-normal" value="${r.precio_normal ?? ""}"></td>
+      <td><input type="number" min="1" step="1" inputmode="numeric" class="a-socio"></td>
+      <td><input type="number" min="1" step="1" inputmode="numeric" class="a-desde"></td>
+      <td><button class="boton chico a-guardar">Guardar</button></td></tr>`).join("")}
+    </tbody></table></div><div id="alvi-msg"></div></div>`;
+  document.querySelectorAll("#tab-alvi .a-guardar").forEach((btn) => btn.addEventListener("click", async () => {
+    const tr = btn.closest("tr");
+    const normal = Number(tr.querySelector(".a-normal").value);
+    const socio = Number(tr.querySelector(".a-socio").value) || null;
+    const desde = Number(tr.querySelector(".a-desde").value) || null;
+    if (!normal || normal < 1) { $("alvi-msg").innerHTML = `<div class="aviso err">Escribe el precio regular.</div>`; return; }
+    if (socio && socio >= normal) { $("alvi-msg").innerHTML = `<div class="aviso err">El precio socio debe ser menor que el regular.</div>`; return; }
+    btn.disabled = true;
+    const { error } = await sb.from("precios").insert({
+      coincidencia_id: Number(tr.dataset.alvi), precio_normal: normal, precio_oferta: socio,
+      condicion_oferta: socio ? `Precio socio${desde ? " desde " + desde + " un" : ""}` : null,
+      compra_minima: desde, disponible: true, origen: "manual",
+    });
+    if (error) { $("alvi-msg").innerHTML = `<div class="aviso err">No se pudo guardar: ${esc(error.message)}</div>`; btn.disabled = false; return; }
+    const id = Number(tr.dataset.alvi);
+    const { data } = await sb.from("comparacion").select("*").eq("coincidencia_id", id);
+    D.comp = D.comp.filter((r) => r.coincidencia_id !== id).concat(data || []);
+    renderTodo();
+    $("alvi-msg").innerHTML = `<div class="aviso ok">Precio guardado.</div>`;
+  }));
+}
+
+// ---------- Historial ----------
+function renderHistorial() {
+  const est = { completa: ["Completa", "c-ok"], parcial: ["Parcial", "c-por_confirmar"], fallida: ["Fallida", "c-principal"], en_curso: ["En curso", "c-referencia"] };
+  $("tab-historial").innerHTML = `<div class="tarjeta"><h2>Actualizaciones</h2>
+    <p class="nota">"Parcial" significa que algunos productos no se encontraron en el sitio; su precio anterior se conserva.</p>
+    <div class="tabla"><table><thead><tr><th>Fecha</th><th>Pedida por</th><th>Estado</th><th class="n">Precios</th><th class="n">Duración</th><th>Productos sin precio</th></tr></thead><tbody>
+    ${D.act.map((a) => { const d = a.detalle || {}; const e = est[a.estado] || [a.estado, "c-gris"]; return `<tr>
+      <td>${fecha(a.iniciada_en)}</td><td>${esc(a.solicitada_por || "—")}</td><td><span class="chip ${e[1]}">${e[0]}</span></td>
+      <td class="n">${d.con_precio ?? "—"} / ${d.total ?? "—"}</td><td class="n">${d.segundos != null ? Math.round(d.segundos / 60) + " min" : "—"}</td>
+      <td class="sub">${(d.faltantes || []).map((f) => esc(f.producto)).join("<br>") || "—"}</td></tr>`; }).join("")}
+    </tbody></table></div></div>`;
+}
+
+// ---------- pestañas ----------
+document.querySelectorAll("nav button").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll("nav button").forEach((x) => x.classList.toggle("activo", x === b));
+  document.querySelectorAll("main > section").forEach((s) => s.classList.toggle("oculto", s.id !== "tab-" + b.dataset.tab));
+}));
+
+// ---------- botón Actualizar ----------
+$("btn-actualizar").addEventListener("click", async () => {
+  const btn = $("btn-actualizar");
+  btn.disabled = true;
+  const ultimo = D.act[0]?.id || 0;
+  const { data, error } = await sb.functions.invoke("actualizar", { method: "POST" });
+  if (error) {
+    let msg = "No se pudo iniciar la actualización.";
+    try { msg = (await error.context.json()).mensaje || msg; } catch (_) {}
+    aviso("msg-global", "err", msg); btn.disabled = false; return;
+  }
+  aviso("msg-global", "info", (data && data.mensaje) || "Actualización iniciada.");
+  esperar(ultimo);
+});
+
+async function esperar(ultimo, intentos = 0) {
+  if (intentos > 60) { aviso("msg-global", "err", "La actualización está tardando más de lo normal. Revisa el historial en unos minutos."); $("btn-actualizar").disabled = false; return; }
+  await new Promise((r) => setTimeout(r, 20000));
+  const { data } = await sb.from("actualizaciones").select("*").order("id", { ascending: false }).limit(1);
+  const u = data && data[0];
+  if (u && u.id > ultimo && u.estado !== "en_curso") {
+    aviso("msg-global", u.estado === "fallida" ? "err" : "ok", `Actualización terminada: ${u.detalle?.con_precio ?? "?"} de ${u.detalle?.total ?? "?"} precios.`);
+    await cargar();
+    return;
+  }
+  if (u && u.id > ultimo) { D.act = [u, ...D.act.filter((a) => a.id !== u.id)]; renderEstado(); }
+  esperar(ultimo, intentos + 1);
+}
+
+iniciar();
+</script>
+</body>
+</html>
