@@ -70,12 +70,11 @@
 
 <section id="vista-login" class="login tarjeta oculto">
   <div class="marca">Precios Olivo</div>
-  <p class="nota">Ingresa con el correo y la contraseña que te entregaron.</p>
+  <p class="nota">Escribe el código de acceso del panel.</p>
   <form id="form-login">
-    <label for="correo">Correo</label>
-    <input id="correo" type="email" autocomplete="username" required>
-    <label for="clave">Contraseña</label>
-    <input id="clave" type="password" autocomplete="current-password" required>
+    <label for="codigo">Código de acceso</label>
+    <input id="codigo" type="password" autocomplete="current-password" required autocapitalize="characters" spellcheck="false">
+    <label style="font-weight:400"><input type="checkbox" id="recordar" checked style="width:auto"> Recordar en este equipo</label>
     <div style="margin-top:16px"><button class="boton" type="submit">Ingresar</button></div>
   </form>
   <div id="login-msg"></div>
@@ -139,22 +138,36 @@ function aviso(contenedor, tipo, texto) {
   $(contenedor).innerHTML = texto ? `<div class="aviso ${tipo}" style="margin:12px 16px 0">${esc(texto)}</div>` : "";
 }
 
-// ---------- sesión ----------
+// ---------- acceso con código ----------
+const LLAVE = "precios-olivo-codigo";
+let CODIGO = "";
+const guardado = { leer() { try { return localStorage.getItem(LLAVE) || ""; } catch (_) { return ""; } },
+  escribir(v) { try { v ? localStorage.setItem(LLAVE, v) : localStorage.removeItem(LLAVE); } catch (_) {} } };
+
 async function iniciar() {
-  const { data } = await sb.auth.getSession();
-  if (data.session) { mostrarApp(); } else { $("vista-login").classList.remove("oculto"); }
+  const previo = guardado.leer();
+  if (previo && await probarCodigo(previo)) { CODIGO = previo; mostrarApp(); return; }
+  guardado.escribir("");
+  $("vista-login").classList.remove("oculto");
+}
+
+async function probarCodigo(codigo) {
+  const { error } = await sb.rpc("panel_entrar", { p_codigo: codigo });
+  return !error;
 }
 
 $("form-login").addEventListener("submit", async (e) => {
   e.preventDefault();
   $("login-msg").innerHTML = "";
-  const { error } = await sb.auth.signInWithPassword({ email: $("correo").value.trim(), password: $("clave").value });
-  if (error) { $("login-msg").innerHTML = `<div class="aviso err">No se pudo ingresar: revisa el correo y la contraseña.</div>`; return; }
+  const codigo = $("codigo").value.trim().toUpperCase();
+  if (!await probarCodigo(codigo)) { $("login-msg").innerHTML = `<div class="aviso err">Código incorrecto.</div>`; return; }
+  CODIGO = codigo;
+  if ($("recordar").checked) guardado.escribir(codigo);
   $("vista-login").classList.add("oculto");
   mostrarApp();
 });
 
-$("btn-salir").addEventListener("click", async () => { await sb.auth.signOut(); location.reload(); });
+$("btn-salir").addEventListener("click", () => { guardado.escribir(""); location.reload(); });
 
 async function mostrarApp() {
   $("vista-app").classList.remove("oculto");
@@ -163,19 +176,9 @@ async function mostrarApp() {
 
 // ---------- datos ----------
 async function cargar() {
-  const [m, c, a] = await Promise.all([
-    sb.from("metricas_mensuales").select("*, productos(nombre, categoria, cantidad_base, unidad_base, formato_pendiente)").order("ranking"),
-    sb.from("comparacion").select("*"),
-    sb.from("actualizaciones").select("*").order("id", { ascending: false }).limit(20),
-  ]);
-  const error = m.error || c.error || a.error;
-  if (error) { aviso("msg-global", "err", "No se pudieron cargar los datos: " + error.message); return; }
-  const periodo = m.data.reduce((x, r) => r.periodo > x ? r.periodo : x, "");
-  D.metricas = m.data.filter((r) => r.periodo === periodo);
-  D.comp = c.data; D.act = a.data;
-  if (!D.metricas.length) {
-    aviso("msg-global", "err", "Tu usuario inició sesión, pero no tiene permiso para ver los datos. Pide que agreguen tu correo a la lista de usuarios autorizados.");
-  }
+  const { data, error } = await sb.rpc("panel_datos", { p_codigo: CODIGO });
+  if (error) { aviso("msg-global", "err", "No se pudieron cargar los datos. Si el código cambió, presiona Salir e ingresa el nuevo."); return; }
+  D.metricas = data.metricas; D.comp = data.comp; D.act = data.act;
   renderTodo();
 }
 
@@ -305,11 +308,9 @@ function enlazarAprobaciones(sel) {
     e.stopPropagation();
     btn.disabled = true;
     const id = Number(btn.dataset.coin), estado = btn.dataset.estado;
-    const { error } = await sb.from("coincidencias").update({ estado }).eq("id", id);
+    const { error } = await sb.rpc("panel_cambiar_estado", { p_codigo: CODIGO, p_coincidencia: id, p_estado: estado });
     if (error) { aviso("msg-global", "err", "No se pudo guardar: " + error.message); btn.disabled = false; return; }
-    const { data } = await sb.from("comparacion").select("*").eq("coincidencia_id", id);
-    D.comp = D.comp.filter((r) => r.coincidencia_id !== id).concat(data || []);
-    renderTodo();
+    await cargar();
   }));
 }
 
@@ -381,16 +382,11 @@ function renderAlvi() {
     if (!normal || normal < 1) { $("alvi-msg").innerHTML = `<div class="aviso err">Escribe el precio regular.</div>`; return; }
     if (socio && socio >= normal) { $("alvi-msg").innerHTML = `<div class="aviso err">El precio socio debe ser menor que el regular.</div>`; return; }
     btn.disabled = true;
-    const { error } = await sb.from("precios").insert({
-      coincidencia_id: Number(tr.dataset.alvi), precio_normal: normal, precio_oferta: socio,
-      condicion_oferta: socio ? `Precio socio${desde ? " desde " + desde + " un" : ""}` : null,
-      compra_minima: desde, disponible: true, origen: "manual",
+    const { error } = await sb.rpc("panel_precio_alvi", {
+      p_codigo: CODIGO, p_coincidencia: Number(tr.dataset.alvi), p_normal: normal, p_socio: socio, p_desde: desde,
     });
     if (error) { $("alvi-msg").innerHTML = `<div class="aviso err">No se pudo guardar: ${esc(error.message)}</div>`; btn.disabled = false; return; }
-    const id = Number(tr.dataset.alvi);
-    const { data } = await sb.from("comparacion").select("*").eq("coincidencia_id", id);
-    D.comp = D.comp.filter((r) => r.coincidencia_id !== id).concat(data || []);
-    renderTodo();
+    await cargar();
     $("alvi-msg").innerHTML = `<div class="aviso ok">Precio guardado.</div>`;
   }));
 }
@@ -419,7 +415,7 @@ $("btn-actualizar").addEventListener("click", async () => {
   const btn = $("btn-actualizar");
   btn.disabled = true;
   const ultimo = D.act[0]?.id || 0;
-  const { data, error } = await sb.functions.invoke("actualizar", { method: "POST" });
+  const { data, error } = await sb.functions.invoke("actualizar", { method: "POST", body: { codigo: CODIGO } });
   if (error) {
     let msg = "No se pudo iniciar la actualización.";
     try { msg = (await error.context.json()).mensaje || msg; } catch (_) {}
@@ -432,8 +428,8 @@ $("btn-actualizar").addEventListener("click", async () => {
 async function esperar(ultimo, intentos = 0) {
   if (intentos > 60) { aviso("msg-global", "err", "La actualización está tardando más de lo normal. Revisa el historial en unos minutos."); $("btn-actualizar").disabled = false; return; }
   await new Promise((r) => setTimeout(r, 20000));
-  const { data } = await sb.from("actualizaciones").select("*").order("id", { ascending: false }).limit(1);
-  const u = data && data[0];
+  const { data } = await sb.rpc("panel_datos", { p_codigo: CODIGO });
+  const u = data && data.act && data.act[0];
   if (u && u.id > ultimo && u.estado !== "en_curso") {
     aviso("msg-global", u.estado === "fallida" ? "err" : "ok", `Actualización terminada: ${u.detalle?.con_precio ?? "?"} de ${u.detalle?.total ?? "?"} precios.`);
     await cargar();
